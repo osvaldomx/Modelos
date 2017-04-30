@@ -40,7 +40,7 @@ X_val = np.swapaxes(X_val,1,3)
 
 
 # build the VGG16 network
-base_model = applications.VGG16(weights='imagenet',
+base_model = applications.VGG16(weights='None',
                                 include_top=False,
                                 input_tensor=input_tensor)
 
@@ -82,7 +82,7 @@ model.compile(loss='binary_crossentropy',
 #X_all = np.concatenate((X_train, X_val, X_test))
 #y_all = np.concatenate((y_train, y_val, y_test))
 
-model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=2)
+model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=5)
 
 print('Done!')
 
