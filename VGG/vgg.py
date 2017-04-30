@@ -82,7 +82,7 @@ model.compile(loss='binary_crossentropy',
 #X_all = np.concatenate((X_train, X_val, X_test))
 #y_all = np.concatenate((y_train, y_val, y_test))
 
-model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=1)
+model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=2)
 
 print('Done!')
 
