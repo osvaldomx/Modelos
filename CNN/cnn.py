@@ -165,7 +165,8 @@ if __name__ == '__main__':
     #av_feats = av_feats / (feats.shape[1] / 206)
     av_feats = reduce(lambda x, y: x+y, [feats[:, i*206:(i+1)*206] for i in range(feats.shape[1] / 206)])
     av_feats = av_feats / (feats.shape[1] / 206)
-    images = gen_images(np.array(locs_2d), av_feats, 32, normalize=False)
+    images = gen_images(np.array(locs_2d), av_feats, 100, normalize=False)
+    np.save('p300_data/images_100.npy', images)
     print('\n')
 
     #train(images, np.squeeze(feats[:, -1]) - 1, fold_pairs[2], 'cnn')
@@ -212,25 +213,23 @@ if __name__ == '__main__':
     network.add(Dropout(0.5))
     network.add(Dense(num_classes, activation='sigmoid'))
 
-    network.compile(optimizer='adam',
+    network.compile(optimizer='sgd',
         loss='binary_crossentropy',
         metrics=['accuracy'])
 
     # Class labels should start from 0
     print('Training the CNN Model...')
-    #y_train = to_categorical(y_train)
-    #network.fit(X_train,y_train, validation_data=(X_val,y_val), epochs=num_epochs)
+
     y_train = to_categorical(y_train)
     y_val = to_categorical(y_val)
     y_test = to_categorical(y_test)
 
     network.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=num_epochs)
-    #train(images, feats[:, -1], fold_pairs[1], 'cnn')
 
-    network.save('cnn_p300.h5')
-    network.save_weights('weights_cnn_p300.h5')
+    network.save('cnn_p300_100p.h5')
+    network.save_weights('weights_cnn_p300_100p.h5')
 
-    network.evaluate(X_test,y_test)
+    print(network.evaluate(X_test,y_test))
 
 
     print('Done!')
