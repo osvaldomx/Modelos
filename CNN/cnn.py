@@ -62,8 +62,8 @@ def gen_images(locs, features, n_gridpoints, normalize=True,
     feat_array_temp = []
     nElectrodes = locs.shape[0]     # Number of electrodes
     # Test whether the feature vector length is divisible by number of electrodes
-    assert features.shape[1] % nElectrodes == 0
-    n_colors = features.shape[1] / nElectrodes
+    # assert features.shape[1] % nElectrodes == 0
+    n_colors = int(features.shape[1] / nElectrodes)
     for c in range(n_colors):
         feat_array_temp.append(features[:, c * nElectrodes : nElectrodes * (c+1)])
     if augment:
@@ -136,16 +136,17 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 if __name__ == '__main__':
     # Load electrode locations
     print('Loading data...')
-    locs_3d = sio.loadmat('sample_data/Neuroscan_locs_orig.mat')['A']
+    locs_3d = sio.loadmat('p300_data/Neuroscan_locs_orig.mat')['A']
     locs_2d = []
     # Convert to 2D
     for e in locs_3d:
         locs_2d.append(azim_proj(e))
 
     #feats = np.load('data_ACS.npy')
-    feats = sio.loadmat('sample_data/FeatureMat_timeWin.mat')['features']
+    feats = np.load('p300_data/data_ACS.npy')
 
-    subj_nums = np.squeeze(sio.loadmat('sample_data/trials_subNums.mat')['subjectNum'])
+    #subj_nums = np.squeeze(sio.loadmat('sample_data/trials_subNums.mat')['subjectNum'])
+    subj_nums = np.load('p300_data/subj.npy')
 
     # Leave-Subject-Out cross validation
     fold_pairs = []
@@ -162,17 +163,16 @@ if __name__ == '__main__':
     # Find the average response over time windows
     #av_feats = reduce(lambda x, y: x + y, [feats[:, i * 206:(i + 1) * 206] for i in range(feats.shape[1] / 206)])
     #av_feats = av_feats / (feats.shape[1] / 206)
-    av_feats = reduce(lambda x, y: x+y, [feats[:, i*192:(i+1)*192] for i in range(feats.shape[1] / 192)])
-    av_feats = av_feats / (feats.shape[1] / 192)
+    av_feats = reduce(lambda x, y: x+y, [feats[:, i*206:(i+1)*206] for i in range(feats.shape[1] / 206)])
+    av_feats = av_feats / (feats.shape[1] / 206)
     images = gen_images(np.array(locs_2d), av_feats, 32, normalize=False)
     print('\n')
 
     #train(images, np.squeeze(feats[:, -1]) - 1, fold_pairs[2], 'cnn')
-    labels = np.squeeze(feats[:,-1])-1
+    labels = np.squeeze(feats[:,-1])
     fold = fold_pairs[2]
     batch_size = 32
     num_epochs = 5
-    weights = []
     count = 0
     n_layers = (4,2,1)
 
@@ -210,10 +210,10 @@ if __name__ == '__main__':
     network.add(Dense(256, activation='relu'))
 
     network.add(Dropout(0.5))
-    network.add(Dense(num_classes, activation='softmax'))
+    network.add(Dense(num_classes, activation='sigmoid'))
 
     network.compile(optimizer='adam',
-        loss='categorical_crossentropy',
+        loss='binary_crossentropy',
         metrics=['accuracy'])
 
     # Class labels should start from 0
@@ -227,8 +227,8 @@ if __name__ == '__main__':
     network.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=num_epochs)
     #train(images, feats[:, -1], fold_pairs[1], 'cnn')
 
-    network.save('cnn_eeg_learn.h5')
-    network.save_weights('weights_cnn_eeg_learn.h5')
+    network.save('cnn_p300.h5')
+    network.save_weights('weights_cnn_p300.h5')
 
     network.evaluate(X_test,y_test)
 
