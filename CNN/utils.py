@@ -116,10 +116,28 @@ def reformatInput(data, labels, indices):
         return [(data[trainIndices], np.squeeze(labels[trainIndices]).astype(np.int32)),
                 (data[validIndices], np.squeeze(labels[validIndices]).astype(np.int32)),
                 (data[testIndices], np.squeeze(labels[testIndices]).astype(np.int32))]
-    #elif data.ndim == 5:
-    #    return [(data[:, trainIndices], np.squeeze(labels[trainIndices]).astype(np.int32)),
-    #            (data[:, validIndices], np.squeeze(labels[validIndices]).astype(np.int32)),
-    #            (data[:, testIndices], np.squeeze(labels[testIndices]).astype(np.int32))]
+    elif data.ndim == 5:
+        return [(data[:, trainIndices], np.squeeze(labels[trainIndices]).astype(np.int32)),
+                (data[:, validIndices], np.squeeze(labels[validIndices]).astype(np.int32)),
+                (data[:, testIndices], np.squeeze(labels[testIndices]).astype(np.int32))]
+
+
+def reformatInputIdx(data, labels, indices):
+    """
+
+    :param data:
+    :param labels:
+    :param indices:
+    :return:
+    """
+
+    trainIndices = indices[0][len(indices[1]):]
+    validIndices = indices[0][:len(indices[1])]
+    testIndices = indices[1]
+
+    return [(data[trainIndices], np.squeeze(labels[trainIndices]).astype(np.int32)),
+            (data[validIndices], np.squeeze(labels[validIndices]).astype(np.int32)),
+            (data[testIndices], np.squeeze(labels[testIndices]).astype(np.int32))]
 
 
 if __name__ == '__main__':

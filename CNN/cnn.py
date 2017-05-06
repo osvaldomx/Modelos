@@ -104,35 +104,6 @@ def gen_images(locs, features, n_gridpoints, normalize=True,
     return np.swapaxes(np.asarray(temp_interp), 0, 1)     # swap axes to have [samples, colors, W, H]
 
 
-def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
-    """
-    Iterates over the samples returing batches of size batchsize.
-    :param inputs: input data array. It should be a 4D numpy array for images [n_samples, n_colors, W, H] and 5D numpy
-                    array if working with sequence of images [n_timewindows, n_samples, n_colors, W, H].
-    :param targets: vector of target labels.
-    :param batchsize: Batch size
-    :param shuffle: Flag whether to shuffle the samples before iterating or not.
-    :return: images and labels for a batch
-    """
-    if inputs.ndim == 4:
-        input_len = inputs.shape[0]
-    elif inputs.ndim == 5:
-        input_len = inputs.shape[1]
-    assert input_len == len(targets)
-    if shuffle:
-        indices = np.arange(input_len)
-        np.random.shuffle(indices)
-    for start_idx in range(0, input_len, batchsize):
-        if shuffle:
-            excerpt = indices[start_idx:start_idx + batchsize]
-        else:
-            excerpt = slice(start_idx, start_idx + batchsize)
-        if inputs.ndim == 4:
-            yield inputs[excerpt], targets[excerpt]
-        elif inputs.ndim == 5:
-            yield inputs[:, excerpt], targets[excerpt]
-
-
 if __name__ == '__main__':
     # Load electrode locations
     print('Loading data...')
@@ -158,36 +129,40 @@ if __name__ == '__main__':
         np.random.shuffle(ts)
         fold_pairs.append((tr, ts))
 
+    labels = np.squeeze(feats[:, -1])
+    fold = fold_pairs[2]
+    batch_size = 32
+    num_epochs = 10
+
+    num_classes = len(np.unique(labels))
+
+
     # CNN Mode
-    print('Generating images...')
+    imsize = 32
     # Find the average response over time windows
     #av_feats = reduce(lambda x, y: x + y, [feats[:, i * 206:(i + 1) * 206] for i in range(feats.shape[1] / 206)])
     #av_feats = av_feats / (feats.shape[1] / 206)
     av_feats = reduce(lambda x, y: x+y, [feats[:, i*206:(i+1)*206] for i in range(feats.shape[1] / 206)])
     av_feats = av_feats / (feats.shape[1] / 206)
-    images = gen_images(np.array(locs_2d), av_feats, 100, normalize=False)
-    np.save('p300_data/images_100.npy', images)
-    print('\n')
-
-    #train(images, np.squeeze(feats[:, -1]) - 1, fold_pairs[2], 'cnn')
-    labels = np.squeeze(feats[:,-1])
-    fold = fold_pairs[2]
-    batch_size = 32
-    num_epochs = 5
-    count = 0
-    n_layers = (4,2,1)
-
-    num_classes = len(np.unique(labels))
+    images = gen_images(np.array(locs_2d), av_feats, imsize, normalize=False)
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = reformatInput(images, labels, fold)
+    # (X_train, y_train), (X_val, y_val), (X_test, y_test) = reformatInputIdx(av_feats, labels, fold)
     X_train = X_train.astype("float32", casting='unsafe')
     X_val = X_val.astype("float32", casting='unsafe')
     X_test = X_test.astype("float32", casting='unsafe')
+
+    #print('Generating training images...')
+    #X_train = gen_images(np.array(locs_2d), X_train, imsize, normalize=False)
+    #print('Genarating validation images...')
+    #X_val = gen_images(np.array(locs_2d), X_val, imsize, normalize=False)
+    #print('\n')
+
 
     print('Building model...')
 
     network = Sequential()
 
-    network.add(InputLayer(input_shape=(3,32,32)))
+    network.add(InputLayer(input_shape=(3,imsize,imsize)))
 
     network.add(Conv2D(32, 3, padding='same', data_format='channels_first'))
     network.add(Conv2D(32, 3, padding='same', data_format='channels_first'))
@@ -213,23 +188,31 @@ if __name__ == '__main__':
     network.add(Dropout(0.5))
     network.add(Dense(num_classes, activation='sigmoid'))
 
-    network.compile(optimizer='sgd',
+    network.compile(optimizer='adam',
         loss='binary_crossentropy',
         metrics=['accuracy'])
 
     # Class labels should start from 0
     print('Training the CNN Model...')
 
-    y_train = to_categorical(y_train)
-    y_val = to_categorical(y_val)
-    y_test = to_categorical(y_test)
+    y_train_cat = to_categorical(y_train)
+    y_val_cat = to_categorical(y_val)
+    y_test_cat = to_categorical(y_test)
 
-    network.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=num_epochs)
+    class_weights = {0:1., 1:6.}
 
-    network.save('cnn_p300_100p.h5')
-    network.save_weights('weights_cnn_p300_100p.h5')
+    network.fit(X_train, y_train_cat,
+                validation_data=(X_val, y_val_cat),
+                epochs=num_epochs,
+                class_weight=class_weights)
 
-    print(network.evaluate(X_test,y_test))
+    #del X_train
+    #del X_val
+
+    network.save('cnn_p300p.h5')
+    network.save_weights('weights_cnn_p300p.h5')
+
+    print(network.evaluate(X_test,y_test_cat))
 
 
     print('Done!')
