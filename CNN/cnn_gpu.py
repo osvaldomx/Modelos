@@ -2,6 +2,7 @@
 import numpy as np
 import scipy.io as sio
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from scipy.interpolate import griddata
 
@@ -16,6 +17,7 @@ from keras.utils import to_categorical
 from utils import reformatInput, cart2sph, augment_EEG, pol2cart
 
 from sklearn.preprocessing import scale
+from sklearn.metrics import roc_curve, auc
 
 
 np.random.seed(1234)
@@ -131,8 +133,6 @@ if __name__ == '__main__':
     labels = np.squeeze(feats[:, -1])
     fold = fold_pairs[2]
     batch_size = 32
-    num_epochs = 50
-
     num_classes = len(np.unique(labels))
 
 
@@ -143,8 +143,7 @@ if __name__ == '__main__':
     #av_feats = av_feats / (feats.shape[1] / 206)
     av_feats = reduce(lambda x, y: x+y, [feats[:, i*206:(i+1)*206] for i in range(feats.shape[1] / 206)])
     av_feats = av_feats / (feats.shape[1] / 206)
-    with tf.device('/gpu:0'):
-        images = gen_images(np.array(locs_2d), av_feats, imsize, normalize=False)
+    images = gen_images(np.array(locs_2d), av_feats, imsize, normalize=False)
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = reformatInput(images, labels, fold)
     # (X_train, y_train), (X_val, y_val), (X_test, y_test) = reformatInputIdx(av_feats, labels, fold)
     X_train = X_train.astype("float32", casting='unsafe')
@@ -199,7 +198,8 @@ if __name__ == '__main__':
     y_val_cat = to_categorical(y_val)
     y_test_cat = to_categorical(y_test)
 
-    class_weights = {0:1, 1:1}
+    class_weights = {0:.25, 1:.75}
+    num_epochs = 10
 
     with tf.device('/gpu:0'):
         network.fit(X_train, y_train_cat,
@@ -210,11 +210,36 @@ if __name__ == '__main__':
     #del X_train
     #del X_val
 
-    network.save('cnn_p300_1-12.h5')
-    network.save_weights('weights_cnn_p300_1-12.h5')
+    network.save('cnn_p300.h5')
+    network.save_weights('weights_cnn_p300.h5')
 
-    with tf.device('/gpu:0'):
-        print(network.evaluate(X_test,y_test_cat))
+    print(network.evaluate(X_test,y_test_cat))
+
+    predict = network.predict_classes(X_test)
+
+    fpr, tpr, threshold = roc_curve(y_test, predict)
+    area = auc(fpr, tpr)
+
+    print('\n')
+    print('balancing:{0}').format(class_weights)
+    print('y_test = {0}').format(y_train.sum())
+    print('predict = {0}').format(predict.sum())
+    print('auc = {0}').format(area)
+
+    plt.figure()
+    lw = 2
+    plt.plot(fpr[2], tpr[2], color='darkorange',
+             lw=lw, label='ROC curve (area = %0.4f)' % area)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
+
+
 
 
     print('Done!')

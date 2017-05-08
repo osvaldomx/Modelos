@@ -92,7 +92,7 @@ def load_data(data_file):
     -------
     data: array_like
     """
-    print("Loading data from %s" % (data_file))
+    print("Loading data from %s" % data_file)
 
     dataMat = scipy.io.loadmat(data_file, mat_dtype=True)
 
@@ -142,5 +142,5 @@ def reformatInputIdx(data, labels, indices):
 
 if __name__ == '__main__':
     data = np.random.normal(size=(100, 10))
-    print 'Original: {0}'.format(data)
-    print 'Augmented: {0}'.format(augment_EEG(data, 0.1, pca=True))
+    print'Original: {0}'.format(data)
+    print'Augmented: {0}'.format(augment_EEG(data, 0.1, pca=True))
