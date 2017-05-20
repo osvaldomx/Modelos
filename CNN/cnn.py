@@ -18,7 +18,7 @@ from utils import reformatInput, cart2sph, augment_EEG, pol2cart
 from sklearn.preprocessing import scale
 from sklearn.metrics import auc, roc_curve
 
-np.random.seed(1234)
+np.random.seed(123)
 
 
 def azim_proj(pos):
@@ -208,20 +208,20 @@ if __name__ == '__main__':
 
     print('\n')
     print'balancing:{0}'.format(class_weights)
-    print'y_test = {0}'.format(y_train.sum())
+    print'y_test = {0}'.format(y_test.sum())
     print'predict = {0}'.format(predict.sum())
     print'auc = {0}'.format(area)
 
     plt.figure()
     lw = 2
-    plt.plot(fpr[2], tpr[2], color='darkorange',
-             lw=lw, label='ROC curve (area = %0.4f)' % area)
+    plt.plot(fpr, tpr, color='darkorange', lw=lw,
+             label='ROC curve (area = %0.4f)' % area)
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
+    plt.title('Receiver operating characteristic: CovNet with P300 data')
     plt.legend(loc="lower right")
     plt.show()
 
