@@ -112,7 +112,11 @@ if __name__ == '__main__':
     for e in locs_3d:
         locs_2d.append(azim_proj(e))
 
-    feats = np.load('p300_data/data_ACS.npy')
+    data = sio.loadmat('p300_data/dataAcs.mat')
+
+    feats = np.concatenate((data['dataCalor'], data['dataCarino'], data['dataSushi']))
+    feats = np.swapaxes(feats, 2, 1)
+    feats = feats.reshape((feats.shape[0], -1))
 
     subj_nums = np.load('p300_data/subj.npy')
 
@@ -126,10 +130,15 @@ if __name__ == '__main__':
         np.random.shuffle(ts)
         fold_pairs.append((tr, ts))
 
-    labels = np.squeeze(feats[:, -1])
+    labels = np.concatenate((data['labelCalor'][:, 1:2],
+                        data['labelCarino'][:, 1:2],
+                        data['labelSushi'][:, 1:2]))
+    np.place(labels, labels < 0, 0)
+    labels = np.squeeze(labels)
+
     fold = fold_pairs[2]
     batch_size = 32
-    num_epochs = 50
+    num_epochs = 5
 
     num_classes = len(np.unique(labels))
 
@@ -139,9 +148,9 @@ if __name__ == '__main__':
     av_feats = reduce(lambda x, y: x + y, [feats[:, i * 206:(i + 1) * 206] for i in range(feats.shape[1] / 206)])
     av_feats = av_feats / (feats.shape[1] / 206)
 
-    # images = gen_images(np.array(locs_2d), av_feats, imsize, normalize=False)
-    images = np.load('images.npy')
-    # np.save('images', images)
+    images = gen_images(np.array(locs_2d), av_feats, imsize, normalize=False)
+    # images = np.load('images.npy')
+    np.save('images', images)
 
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = reformatInput(images, labels, fold)
     X_train = X_train.astype("float32", casting='unsafe')
@@ -189,12 +198,12 @@ if __name__ == '__main__':
     y_val_cat = to_categorical(y_val)
     y_test_cat = to_categorical(y_test)
 
-    class_weights = {0: .2, 1: .8}
+    #class_weights = {0: .2, 1: .8}
 
     network.fit(X_train, y_train_cat,
                 validation_data=(X_val, y_val_cat),
-                epochs=num_epochs,
-                class_weight=class_weights)
+                epochs=num_epochs)
+    #            class_weight=class_weights)
 
     network.save('cnn_p300.h5')
     network.save_weights('weights_cnn_p300.h5')
@@ -207,7 +216,7 @@ if __name__ == '__main__':
     area = auc(fpr, tpr)
 
     print('\n')
-    print'balancing:{0}'.format(class_weights)
+    #print'balancing:{0}'.format(class_weights)
     print'y_test = {0}'.format(y_test.sum())
     print'predict = {0}'.format(predict.sum())
     print'auc = {0}'.format(area)
