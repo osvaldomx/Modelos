@@ -18,8 +18,6 @@ from utils import cart2sph, pol2cart, augment_EEG, reformatInput
 
 from sklearn.preprocessing import scale
 
-from multiprocessing import Process
-
 
 def azim_proj(pos):
     """
@@ -103,19 +101,17 @@ def gen_images(locs, features, n_gridpoints, normalize=True,
     return np.swapaxes(np.asarray(temp_interp), 0, 1)  # swap axes to have [samples, colors, W, H]
 
 
-def build_cnn(input_var=None, w_init=None, n_layers=(4, 2, 1), n_filters_first=32,
+def build_cnn(input_var=None, n_layers=(4, 2, 1), n_filters_first=32,
               imsize=32, n_colors=3):
     """
     
     :param input_var: 
-    :param w_init: 
     :param n_layers: 
     :param n_filters_first: 
     :param imsize: 
     :param n_colors: 
     :return: 
     """
-    weights = []  # Keeps the weights for all layers
     count = 0
 
     # Input layer
@@ -181,11 +177,11 @@ if __name__ == '__main__':
     main_input = Input(shape=(None, 3, imsize, imsize))
 
     convnets = []
-    w_init = None
+
     # Build 7 parallel CNNs with shared weights
     #for i in range(n_timewin):
-    #    main_input = build_cnn(main_input[i], imsize=imsize, n_colors=n_colors)
-    #    convnets.append(Flatten()(main_input))
+    #    convnet = build_cnn(main_input[i], imsize=imsize, n_colors=n_colors)
+    #    convnets.append(Flatten()(convnet))
 
     in1 = Input(shape=(3,imsize,imsize))
     net1 = Conv2D(32, 3, padding='same', data_format='channels_first')(in1)

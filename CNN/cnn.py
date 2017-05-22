@@ -154,19 +154,19 @@ if __name__ == '__main__':
 
     network.add(InputLayer(input_shape=(3, imsize, imsize)))
 
-    network.add(Conv2D(32, 3, padding='same', data_format='channels_first'))
-    network.add(Conv2D(32, 3, padding='same', data_format='channels_first'))
-    network.add(Conv2D(32, 3, padding='same', data_format='channels_first'))
-    network.add(Conv2D(32, 3, padding='same', data_format='channels_first'))
+    network.add(Conv2D(32, 3, padding='same', data_format='channels_first', activation='relu'))
+    network.add(Conv2D(32, 3, padding='same', data_format='channels_first', activation='relu'))
+    network.add(Conv2D(32, 3, padding='same', data_format='channels_first', activation='relu'))
+    network.add(Conv2D(32, 3, padding='same', data_format='channels_first', activation='relu'))
 
     network.add(MaxPooling2D(pool_size=(2, 2)))
 
-    network.add(Conv2D(64, 3, padding='same', data_format='channels_first'))
-    network.add(Conv2D(64, 3, padding='same', data_format='channels_first'))
+    network.add(Conv2D(64, 3, padding='same', data_format='channels_first', activation='relu'))
+    network.add(Conv2D(64, 3, padding='same', data_format='channels_first', activation='relu'))
 
     network.add(MaxPooling2D(pool_size=(2, 2)))
 
-    network.add(Conv2D(128, 3, padding='same', data_format='channels_first'))
+    network.add(Conv2D(128, 3, padding='same', data_format='channels_first', activation='relu'))
 
     network.add(MaxPooling2D(pool_size=(2, 2)))
 
